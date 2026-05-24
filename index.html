@@ -1,0 +1,1605 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LitGraph Agent | 科研文献多 Agent 分析平台</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --ink: #1c2430;
+      --muted: #647083;
+      --line: #dce2ea;
+      --teal: #138f7a;
+      --teal-soft: #e3f5f1;
+      --indigo: #5061c9;
+      --indigo-soft: #eceeff;
+      --coral: #d8654f;
+      --coral-soft: #fff0ec;
+      --amber: #b98712;
+      --amber-soft: #fff6df;
+      --green: #2b9d64;
+      --red: #c84c4c;
+      --shadow: 0 18px 45px rgba(28, 36, 48, 0.08);
+      --radius: 8px;
+      --font: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .icon-sprite {
+      display: none;
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 24px;
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 230px;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: #20313d;
+      box-shadow: inset 0 -10px 0 rgba(19, 143, 122, 0.35);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .brand span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .nav-tabs button {
+      height: 36px;
+      min-width: 84px;
+      padding: 0 14px;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .nav-tabs .active {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 1px 7px rgba(28, 36, 48, 0.08);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn,
+    .primary-btn,
+    .ghost-btn {
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: var(--radius);
+      transition: transform 0.18s ease, background 0.18s ease, border 0.18s ease;
+    }
+
+    .icon-btn {
+      width: 38px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .primary-btn {
+      min-width: 148px;
+      padding: 0 16px;
+      color: #fff;
+      background: var(--teal);
+      box-shadow: 0 8px 20px rgba(19, 143, 122, 0.22);
+    }
+
+    .ghost-btn {
+      min-width: 112px;
+      padding: 0 14px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .icon-btn:hover,
+    .primary-btn:hover,
+    .ghost-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary-btn:disabled {
+      cursor: wait;
+      opacity: 0.74;
+      transform: none;
+    }
+
+    .workspace {
+      width: min(1480px, calc(100vw - 32px));
+      margin: 16px auto 24px;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr) 360px;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      min-height: 58px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .panel-title span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 26px;
+      min-width: 52px;
+      padding: 0 9px;
+      border-radius: 999px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .corpus-body,
+    .insight-body {
+      padding: 16px;
+    }
+
+    .dropzone {
+      min-height: 148px;
+      border: 1.5px dashed #b8c2cf;
+      border-radius: var(--radius);
+      background: #fbfcfe;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 18px;
+      transition: border 0.18s ease, background 0.18s ease;
+    }
+
+    .dropzone.is-dragging {
+      border-color: var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .dropzone input {
+      display: none;
+    }
+
+    .upload-symbol {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 10px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      border-radius: var(--radius);
+    }
+
+    .dropzone strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .dropzone p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .section-label {
+      margin: 18px 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .paper-list {
+      display: grid;
+      gap: 0;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .paper-row {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 66px;
+      padding: 12px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .paper-row:last-child {
+      border-bottom: 0;
+    }
+
+    .paper-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      color: var(--indigo);
+      background: var(--indigo-soft);
+      border-radius: 6px;
+    }
+
+    .paper-name {
+      min-width: 0;
+    }
+
+    .paper-name strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .paper-name span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .paper-state {
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .query-box {
+      margin-top: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .query-box label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .query-box textarea {
+      width: 100%;
+      min-height: 112px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      color: var(--ink);
+      background: #fff;
+      outline: 0;
+      line-height: 1.6;
+    }
+
+    .query-box textarea:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(19, 143, 122, 0.12);
+    }
+
+    .main-panel {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .pipeline {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .agent-chain {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(96px, 1fr));
+      gap: 10px;
+    }
+
+    .agent-step {
+      min-height: 96px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-step::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      height: 3px;
+      width: var(--progress, 0%);
+      background: var(--teal);
+      transition: width 0.35s ease;
+    }
+
+    .agent-step.active {
+      border-color: rgba(19, 143, 122, 0.58);
+      background: var(--teal-soft);
+    }
+
+    .agent-step.done {
+      border-color: rgba(43, 157, 100, 0.45);
+    }
+
+    .agent-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .agent-head strong {
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .agent-state {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--surface-2);
+    }
+
+    .agent-step.active .agent-state {
+      color: var(--teal);
+      background: #fff;
+    }
+
+    .agent-step.done .agent-state {
+      color: #fff;
+      background: var(--green);
+    }
+
+    .agent-step p {
+      min-height: 36px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+      gap: 0;
+      min-height: 490px;
+    }
+
+    .graph-zone {
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      min-width: 0;
+    }
+
+    .graph-toolbar,
+    .result-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .metric-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-height: 76px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 8px;
+      color: var(--green);
+      font-size: 12px;
+    }
+
+    .graph-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      min-height: 300px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background:
+        linear-gradient(#e8edf3 1px, transparent 1px),
+        linear-gradient(90deg, #e8edf3 1px, transparent 1px),
+        #fbfcfe;
+      background-size: 28px 28px;
+    }
+
+    #graphCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .legend {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      backdrop-filter: blur(8px);
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--teal);
+    }
+
+    .dot.indigo {
+      background: var(--indigo);
+    }
+
+    .dot.coral {
+      background: var(--coral);
+    }
+
+    .dot.amber {
+      background: var(--amber);
+    }
+
+    .evidence-zone {
+      padding: 18px;
+      min-width: 0;
+    }
+
+    .evidence-list {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .evidence-item {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .evidence-item:last-child {
+      border-bottom: 0;
+    }
+
+    .evidence-item header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .evidence-item strong {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .source-tag {
+      min-width: 42px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      color: var(--indigo);
+      background: var(--indigo-soft);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .evidence-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .insight-panel {
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .segment {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .segment button {
+      height: 30px;
+      min-width: 58px;
+      padding: 0 10px;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .segment button.active {
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 0 1px 7px rgba(28, 36, 48, 0.08);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .summary-box {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .summary-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .summary-heading strong {
+      font-size: 14px;
+    }
+
+    .confidence {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .summary-content {
+      padding: 14px;
+      color: #2d3745;
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .summary-content p {
+      margin: 0 0 12px;
+    }
+
+    .summary-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .cite {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 20px;
+      margin: 0 2px;
+      padding: 0 6px;
+      border-radius: 999px;
+      color: var(--indigo);
+      background: var(--indigo-soft);
+      font-size: 11px;
+      font-weight: 800;
+      vertical-align: middle;
+    }
+
+    .audit-list {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .audit-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 52px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .audit-row:last-child {
+      border-bottom: 0;
+    }
+
+    .audit-row strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .audit-row span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .score {
+      min-width: 58px;
+      text-align: right;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .score.good {
+      color: var(--green);
+    }
+
+    .score.warn {
+      color: var(--amber);
+    }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .compare-table th,
+    .compare-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    .compare-table th {
+      color: var(--muted);
+      background: var(--surface-2);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .compare-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .compare-table td:last-child {
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    .export-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mini-action {
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .status-line {
+      min-height: 24px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .toast {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      min-width: 260px;
+      max-width: 360px;
+      padding: 14px 16px;
+      color: #fff;
+      background: #20313d;
+      border-radius: var(--radius);
+      box-shadow: 0 20px 45px rgba(28, 36, 48, 0.2);
+      transform: translateY(24px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+      z-index: 30;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1240px) {
+      .workspace {
+        grid-template-columns: 300px minmax(0, 1fr);
+      }
+
+      .insight-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 1380px) {
+      .analysis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .graph-zone {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 920px) {
+      .topbar {
+        height: auto;
+        padding: 14px 16px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        min-width: 0;
+      }
+
+      .nav-tabs {
+        order: 3;
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      .workspace {
+        width: min(100% - 20px, 760px);
+        grid-template-columns: 1fr;
+        margin-top: 10px;
+      }
+
+      .agent-chain,
+      .metric-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 560px) {
+      .top-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .primary-btn {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .agent-chain,
+      .metric-strip,
+      .export-row {
+        grid-template-columns: 1fr;
+      }
+
+      .graph-wrap {
+        aspect-ratio: 4 / 3;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-network" viewBox="0 0 24 24">
+      <circle cx="12" cy="5" r="3"></circle><circle cx="5" cy="19" r="3"></circle><circle cx="19" cy="19" r="3"></circle><path d="M10.4 7.5 6.6 16.2"></path><path d="M13.6 7.5 17.4 16.2"></path><path d="M8 19h8"></path>
+    </symbol>
+    <symbol id="icon-upload" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8 12 3 7 8"></path><path d="M12 3v12"></path>
+    </symbol>
+    <symbol id="icon-file" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M16 13H8"></path><path d="M16 17H8"></path><path d="M10 9H8"></path>
+    </symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24">
+      <polygon points="6 3 20 12 6 21 6 3"></polygon>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="M20 6 9 17l-5-5"></path>
+    </symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="m9 12 2 2 4-5"></path>
+    </symbol>
+    <symbol id="icon-database" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>
+    </symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.3 7A2 2 0 1 1 7.1 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.1a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z"></path>
+    </symbol>
+  </svg>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg class="icon"><use href="#icon-network"></use></svg>
+        </div>
+        <div>
+          <h1>LitGraph Agent</h1>
+          <span>科研文献多智能体分析平台</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" aria-label="主导航">
+        <button class="active" type="button">工作台</button>
+        <button type="button">知识图谱</button>
+        <button type="button">实验评估</button>
+        <button type="button">审校记录</button>
+      </nav>
+
+      <div class="top-actions">
+        <button class="icon-btn" type="button" title="系统设置" aria-label="系统设置">
+          <svg class="icon"><use href="#icon-settings"></use></svg>
+        </button>
+        <button class="ghost-btn" type="button" id="exportBtn">
+          <svg class="icon"><use href="#icon-download"></use></svg>
+          导出
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel corpus-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon"><use href="#icon-database"></use></svg>
+            <div>
+              <h2>论文语料库</h2>
+              <span>PDF 解析与元数据抽取</span>
+            </div>
+          </div>
+          <span class="badge" id="paperCount">12 篇</span>
+        </div>
+
+        <div class="corpus-body">
+          <label class="dropzone" id="dropzone">
+            <input id="fileInput" type="file" accept=".pdf" multiple>
+            <span>
+              <span class="upload-symbol">
+                <svg class="icon"><use href="#icon-upload"></use></svg>
+              </span>
+              <strong>选择或拖入论文 PDF</strong>
+              <p>解析标题、摘要、实验设置、数据集、指标与引用关系</p>
+            </span>
+          </label>
+
+          <div class="section-label">最近解析</div>
+          <div class="paper-list" id="paperList">
+            <div class="paper-row">
+              <div class="paper-icon"><svg class="icon"><use href="#icon-file"></use></svg></div>
+              <div class="paper-name">
+                <strong>MedSAM: Segment Anything in Medical Images</strong>
+                <span>任务: 医学图像分割 · 指标: Dice / HD95</span>
+              </div>
+              <div class="paper-state">已入图</div>
+            </div>
+            <div class="paper-row">
+              <div class="paper-icon"><svg class="icon"><use href="#icon-file"></use></svg></div>
+              <div class="paper-name">
+                <strong>UNETR: Transformers for 3D Medical Segmentation</strong>
+                <span>任务: 3D 分割 · 数据集: BTCV</span>
+              </div>
+              <div class="paper-state">已入图</div>
+            </div>
+            <div class="paper-row">
+              <div class="paper-icon"><svg class="icon"><use href="#icon-file"></use></svg></div>
+              <div class="paper-name">
+                <strong>Swin-UNet: Pure Transformer for Medical Segmentation</strong>
+                <span>任务: 器官分割 · 方法: 层级窗口注意力</span>
+              </div>
+              <div class="paper-state">已入图</div>
+            </div>
+          </div>
+
+          <div class="query-box">
+            <label for="researchQuery">研究问题</label>
+            <textarea id="researchQuery">分析 Transformer 在医学图像分割中的方法演化、核心数据集、评价指标和未来研究空白。</textarea>
+            <button class="primary-btn" type="button" id="runBtn">
+              <svg class="icon"><use href="#icon-play"></use></svg>
+              运行多 Agent 分析
+            </button>
+            <div class="status-line" id="statusLine">等待规划 Agent 接收研究问题。</div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel main-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon"><use href="#icon-network"></use></svg>
+            <div>
+              <h2>Agent 协作链路</h2>
+              <span>规划、检索、图谱推理、生成、审校</span>
+            </div>
+          </div>
+          <span class="badge" id="runState">Ready</span>
+        </div>
+
+        <div class="pipeline">
+          <div class="agent-chain">
+            <article class="agent-step" data-step="0" style="--progress: 0%;">
+              <div class="agent-head">
+                <strong>规划 Agent</strong>
+                <span class="agent-state"><svg class="icon"><use href="#icon-search"></use></svg></span>
+              </div>
+              <p>拆解研究问题，生成检索式与分析维度。</p>
+            </article>
+            <article class="agent-step" data-step="1" style="--progress: 0%;">
+              <div class="agent-head">
+                <strong>检索 Agent</strong>
+                <span class="agent-state"><svg class="icon"><use href="#icon-database"></use></svg></span>
+              </div>
+              <p>融合关键词、向量和引用网络检索证据。</p>
+            </article>
+            <article class="agent-step" data-step="2" style="--progress: 0%;">
+              <div class="agent-head">
+                <strong>图谱 Agent</strong>
+                <span class="agent-state"><svg class="icon"><use href="#icon-network"></use></svg></span>
+              </div>
+              <p>抽取任务、方法、数据集、指标与结论关系。</p>
+            </article>
+            <article class="agent-step" data-step="3" style="--progress: 0%;">
+              <div class="agent-head">
+                <strong>推理 Agent</strong>
+                <span class="agent-state"><svg class="icon"><use href="#icon-play"></use></svg></span>
+              </div>
+              <p>沿方法演化链和引用链进行多跳推理。</p>
+            </article>
+            <article class="agent-step" data-step="4" style="--progress: 0%;">
+              <div class="agent-head">
+                <strong>审校 Agent</strong>
+                <span class="agent-state"><svg class="icon"><use href="#icon-shield"></use></svg></span>
+              </div>
+              <p>核验证据覆盖、引用准确性和幻觉风险。</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="analysis-grid">
+          <div class="graph-zone">
+            <div class="graph-toolbar">
+              <div class="panel-title">
+                <svg class="icon"><use href="#icon-network"></use></svg>
+                <div>
+                  <h2>领域知识图谱</h2>
+                  <span>任务-方法-数据集-指标-结论</span>
+                </div>
+              </div>
+              <span class="badge" id="graphBadge">42 节点</span>
+            </div>
+
+            <div class="metric-strip">
+              <div class="metric">
+                <span>引用覆盖率</span>
+                <strong id="mCoverage">87%</strong>
+                <small>+18.4%</small>
+              </div>
+              <div class="metric">
+                <span>幻觉风险</span>
+                <strong id="mRisk">9%</strong>
+                <small>下降 31%</small>
+              </div>
+              <div class="metric">
+                <span>多跳证据</span>
+                <strong id="mHop">16</strong>
+                <small>3 条主链路</small>
+              </div>
+              <div class="metric">
+                <span>可复核来源</span>
+                <strong id="mSource">34</strong>
+                <small>PDF 页码级</small>
+              </div>
+            </div>
+
+            <div class="graph-wrap">
+              <canvas id="graphCanvas"></canvas>
+              <div class="legend">
+                <span><i class="dot"></i>任务</span>
+                <span><i class="dot indigo"></i>方法</span>
+                <span><i class="dot coral"></i>数据集</span>
+                <span><i class="dot amber"></i>指标</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="evidence-zone">
+            <div class="result-toolbar">
+              <div class="panel-title">
+                <svg class="icon"><use href="#icon-file"></use></svg>
+                <div>
+                  <h2>证据池</h2>
+                  <span>按相关性与可信度排序</span>
+                </div>
+              </div>
+              <span class="badge">Top 5</span>
+            </div>
+
+            <div class="evidence-list">
+              <article class="evidence-item">
+                <header>
+                  <strong>Transformer 编码器用于长距离依赖建模</strong>
+                  <span class="source-tag">S1</span>
+                </header>
+                <p>UNETR 将 3D 体数据切分为 patch 序列，用 Transformer 捕获全局上下文，再通过解码器恢复分割边界。</p>
+              </article>
+              <article class="evidence-item">
+                <header>
+                  <strong>窗口注意力缓解高分辨率计算开销</strong>
+                  <span class="source-tag">S2</span>
+                </header>
+                <p>Swin-UNet 使用层级窗口注意力，在医学分割中兼顾局部纹理与全局语义。</p>
+              </article>
+              <article class="evidence-item">
+                <header>
+                  <strong>提示式分割增强跨模态泛化</strong>
+                  <span class="source-tag">S3</span>
+                </header>
+                <p>MedSAM 将通用分割模型适配到医学图像，核心优势在于交互提示和大规模预训练迁移。</p>
+              </article>
+              <article class="evidence-item">
+                <header>
+                  <strong>主流指标集中在 Dice 与 HD95</strong>
+                  <span class="source-tag">S4</span>
+                </header>
+                <p>多篇论文使用 Dice 衡量区域重叠，使用 HD95 衡量边界误差，适合对比器官分割质量。</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel insight-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon"><use href="#icon-shield"></use></svg>
+            <div>
+              <h2>可信生成</h2>
+              <span>综述草稿、证据和评估</span>
+            </div>
+          </div>
+          <div class="segment" role="tablist" aria-label="结果视图">
+            <button class="active" type="button" data-tab="summary">综述</button>
+            <button type="button" data-tab="audit">审校</button>
+            <button type="button" data-tab="eval">评估</button>
+          </div>
+        </div>
+
+        <div class="insight-body">
+          <section class="tab-panel active" id="tab-summary">
+            <div class="summary-box">
+              <div class="summary-heading">
+                <strong>自动生成综述</strong>
+                <span class="confidence">
+                  <svg class="icon"><use href="#icon-check"></use></svg>
+                  可信度 91
+                </span>
+              </div>
+              <div class="summary-content" id="summaryText">
+                <p>医学图像分割中的 Transformer 方法大致经历了三条演化路径：首先是将 3D 医学体数据转化为 patch 序列，通过全局自注意力建模长距离依赖；随后出现层级窗口注意力结构，用较低计算成本处理高分辨率图像；近期则转向大模型预训练与提示式交互，以提升跨数据集和跨模态泛化能力。<span class="cite">S1</span><span class="cite">S2</span></p>
+                <p>从实验设置看，BTCV、Synapse、ACDC 等数据集常用于器官和心脏结构分割，Dice 与 HD95 是最稳定的对比指标。现有方法在边界细节、小目标结构和标注稀缺场景仍存在不足，后续可重点研究图谱先验、半监督学习和多模态提示融合。<span class="cite">S3</span><span class="cite">S4</span></p>
+              </div>
+            </div>
+
+            <div class="export-row">
+              <button class="mini-action" type="button">
+                <svg class="icon"><use href="#icon-download"></use></svg>
+                Word 草稿
+              </button>
+              <button class="mini-action" type="button">
+                <svg class="icon"><use href="#icon-file"></use></svg>
+                BibTeX 引用
+              </button>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="tab-audit">
+            <div class="audit-list">
+              <div class="audit-row">
+                <div>
+                  <strong>引用准确性</strong>
+                  <span>生成段落均可回溯到 PDF 页码或摘要证据</span>
+                </div>
+                <div class="score good">94</div>
+              </div>
+              <div class="audit-row">
+                <div>
+                  <strong>证据覆盖率</strong>
+                  <span>覆盖任务、方法、数据集、指标四类节点</span>
+                </div>
+                <div class="score good">89</div>
+              </div>
+              <div class="audit-row">
+                <div>
+                  <strong>幻觉风险</strong>
+                  <span>未发现无来源实验结论，指标表述需二次确认</span>
+                </div>
+                <div class="score warn">低</div>
+              </div>
+              <div class="audit-row">
+                <div>
+                  <strong>长链推理</strong>
+                  <span>UNETR → Swin-UNet → MedSAM 方法演化链完整</span>
+                </div>
+                <div class="score good">3-hop</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="tab-panel" id="tab-eval">
+            <table class="compare-table">
+              <thead>
+                <tr>
+                  <th>指标</th>
+                  <th>普通 RAG</th>
+                  <th>本系统</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>引用准确率</td>
+                  <td>76.2%</td>
+                  <td>91.4%</td>
+                </tr>
+                <tr>
+                  <td>综述完整性</td>
+                  <td>72.8</td>
+                  <td>88.6</td>
+                </tr>
+                <tr>
+                  <td>幻觉率</td>
+                  <td>18.7%</td>
+                  <td>7.9%</td>
+                </tr>
+                <tr>
+                  <td>平均响应耗时</td>
+                  <td>9.8s</td>
+                  <td>14.3s</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="toast" id="toast">已完成。</div>
+
+  <script>
+    const steps = Array.from(document.querySelectorAll(".agent-step"));
+    const runBtn = document.getElementById("runBtn");
+    const runState = document.getElementById("runState");
+    const statusLine = document.getElementById("statusLine");
+    const paperList = document.getElementById("paperList");
+    const paperCount = document.getElementById("paperCount");
+    const fileInput = document.getElementById("fileInput");
+    const dropzone = document.getElementById("dropzone");
+    const toast = document.getElementById("toast");
+    const metricValues = {
+      coverage: document.getElementById("mCoverage"),
+      risk: document.getElementById("mRisk"),
+      hop: document.getElementById("mHop"),
+      source: document.getElementById("mSource")
+    };
+
+    const stageMessages = [
+      "规划 Agent 正在拆解研究问题，生成检索关键词与图谱 schema。",
+      "检索 Agent 正在融合向量检索、关键词检索和引用网络。",
+      "图谱 Agent 正在抽取任务、方法、数据集、指标和结论关系。",
+      "推理 Agent 正在沿方法演化链进行多跳证据推理。",
+      "审校 Agent 正在核验引用来源、证据覆盖和幻觉风险。"
+    ];
+
+    const nodes = [
+      { label: "医学图像分割", type: "task", x: 0.5, y: 0.22, r: 28 },
+      { label: "UNETR", type: "method", x: 0.25, y: 0.48, r: 22 },
+      { label: "Swin-UNet", type: "method", x: 0.52, y: 0.55, r: 25 },
+      { label: "MedSAM", type: "method", x: 0.75, y: 0.43, r: 24 },
+      { label: "BTCV", type: "dataset", x: 0.18, y: 0.78, r: 19 },
+      { label: "Synapse", type: "dataset", x: 0.45, y: 0.82, r: 20 },
+      { label: "ACDC", type: "dataset", x: 0.72, y: 0.75, r: 18 },
+      { label: "Dice", type: "metric", x: 0.36, y: 0.32, r: 18 },
+      { label: "HD95", type: "metric", x: 0.68, y: 0.24, r: 18 }
+    ];
+
+    const edges = [
+      [0, 1], [0, 2], [0, 3], [1, 4], [1, 7], [2, 5], [2, 7], [2, 8], [3, 6], [3, 8], [1, 2], [2, 3]
+    ];
+
+    const colors = {
+      task: "#138f7a",
+      method: "#5061c9",
+      dataset: "#d8654f",
+      metric: "#b98712"
+    };
+
+    function icon(id) {
+      return `<svg class="icon"><use href="#${id}"></use></svg>`;
+    }
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+
+    function resetSteps() {
+      steps.forEach((step) => {
+        step.classList.remove("active", "done");
+        step.style.setProperty("--progress", "0%");
+        const state = step.querySelector(".agent-state");
+        state.innerHTML = icon(step.dataset.step === "4" ? "icon-shield" : "icon-search");
+      });
+    }
+
+    function runAnalysis() {
+      resetSteps();
+      runBtn.disabled = true;
+      runState.textContent = "Running";
+      metricValues.coverage.textContent = "72%";
+      metricValues.risk.textContent = "18%";
+      metricValues.hop.textContent = "6";
+      metricValues.source.textContent = "18";
+
+      steps.forEach((step, index) => {
+        window.setTimeout(() => {
+          steps.forEach((item, i) => {
+            if (i < index) {
+              item.classList.add("done");
+              item.classList.remove("active");
+              item.style.setProperty("--progress", "100%");
+              item.querySelector(".agent-state").innerHTML = icon("icon-check");
+            }
+          });
+
+          step.classList.add("active");
+          step.style.setProperty("--progress", "68%");
+          statusLine.textContent = stageMessages[index];
+
+          if (index === steps.length - 1) {
+            window.setTimeout(() => {
+              step.classList.remove("active");
+              step.classList.add("done");
+              step.style.setProperty("--progress", "100%");
+              step.querySelector(".agent-state").innerHTML = icon("icon-check");
+              runBtn.disabled = false;
+              runState.textContent = "Verified";
+              metricValues.coverage.textContent = "91%";
+              metricValues.risk.textContent = "8%";
+              metricValues.hop.textContent = "19";
+              metricValues.source.textContent = "41";
+              statusLine.textContent = "审校完成：已生成可追溯综述，并标注证据来源。";
+              showToast("多 Agent 分析完成：综述、证据和评估指标已更新。");
+            }, 680);
+          }
+        }, index * 760);
+      });
+    }
+
+    function addFiles(files) {
+      const validFiles = Array.from(files).filter((file) => file.name.toLowerCase().endsWith(".pdf"));
+      if (!validFiles.length) {
+        showToast("请上传 PDF 文件。");
+        return;
+      }
+
+      validFiles.slice(0, 5).forEach((file) => {
+        const row = document.createElement("div");
+        row.className = "paper-row";
+        row.innerHTML = `
+          <div class="paper-icon">${icon("icon-file")}</div>
+          <div class="paper-name">
+            <strong>${file.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong>
+            <span>待解析 · ${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+          </div>
+          <div class="paper-state">排队中</div>
+        `;
+        paperList.prepend(row);
+      });
+
+      const current = Number.parseInt(paperCount.textContent, 10) || 12;
+      paperCount.textContent = `${current + validFiles.length} 篇`;
+      showToast(`已加入 ${validFiles.length} 篇论文到解析队列。`);
+    }
+
+    function drawGraph(time = 0) {
+      const canvas = document.getElementById("graphCanvas");
+      const wrap = canvas.parentElement;
+      const rect = wrap.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(320, rect.width);
+      const height = Math.max(240, rect.height);
+
+      if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+      }
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const projected = nodes.map((node, index) => {
+        const drift = Math.sin(time / 900 + index) * 4;
+        return {
+          ...node,
+          px: node.x * width,
+          py: node.y * height + drift
+        };
+      });
+
+      ctx.lineWidth = 1.3;
+      edges.forEach(([a, b], index) => {
+        const from = projected[a];
+        const to = projected[b];
+        ctx.beginPath();
+        ctx.moveTo(from.px, from.py);
+        ctx.lineTo(to.px, to.py);
+        ctx.strokeStyle = index > 9 ? "rgba(19, 143, 122, 0.28)" : "rgba(80, 97, 201, 0.2)";
+        ctx.stroke();
+      });
+
+      projected.forEach((node, index) => {
+        const pulse = 1 + Math.sin(time / 420 + index) * 0.04;
+        ctx.beginPath();
+        ctx.arc(node.px, node.py, node.r * pulse + 8, 0, Math.PI * 2);
+        ctx.fillStyle = `${colors[node.type]}18`;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(node.px, node.py, node.r * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = colors[node.type];
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(node.px - node.r * 0.25, node.py - node.r * 0.25, node.r * 0.28, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.28)";
+        ctx.fill();
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "700 12px Microsoft YaHei, Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const label = node.label.length > 8 ? node.label.slice(0, 8) : node.label;
+        ctx.fillText(label, node.px, node.py);
+      });
+
+      window.requestAnimationFrame(drawGraph);
+    }
+
+    runBtn.addEventListener("click", runAnalysis);
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      showToast("已模拟导出：包含综述草稿、引用表和评估指标。");
+    });
+
+    fileInput.addEventListener("change", (event) => addFiles(event.target.files));
+    dropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropzone.classList.add("is-dragging");
+    });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("is-dragging"));
+    dropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      dropzone.classList.remove("is-dragging");
+      addFiles(event.dataTransfer.files);
+    });
+
+    document.querySelectorAll(".segment button").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".segment button").forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach((panel) => panel.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(`tab-${button.dataset.tab}`).classList.add("active");
+      });
+    });
+
+    window.addEventListener("resize", () => drawGraph(performance.now()));
+    window.requestAnimationFrame(drawGraph);
+  </script>
+</body>
+</html>
