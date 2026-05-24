@@ -1,0 +1,14 @@
+{
+  "name": "deepseek-codex-proxy",
+  "version": "1.0.0",
+  "description": "OpenAI-compatible proxy server for forwarding Codex requests to DeepSeek.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

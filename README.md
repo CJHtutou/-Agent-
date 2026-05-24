@@ -43,3 +43,13 @@ http://127.0.0.1:8765/index.html
 - 使用 Neo4j 存储论文知识图谱
 - 使用 LangGraph 或 AutoGen 编排多 Agent 工作流
 - 增加 RAGAS、人工评分和引用一致性评估
+
+## DeepSeek 中转服务
+
+仓库内新增了 `proxy-server` 目录，可作为 DeepSeek API 的 OpenAI 兼容中转服务，方便 Codex 或其他 Agent 工具通过自定义 `base_url` 接入 DeepSeek。
+
+详见：
+
+```text
+proxy-server/README.md
+```

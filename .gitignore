@@ -6,6 +6,7 @@ Thumbs.db
 *.log
 .env
 .env.*
+node_modules/
 
 # Editor files
 .vscode/
